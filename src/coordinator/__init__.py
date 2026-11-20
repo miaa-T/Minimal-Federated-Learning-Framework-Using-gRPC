@@ -1,0 +1,1 @@
+"""Monolithic coordinator component."""
