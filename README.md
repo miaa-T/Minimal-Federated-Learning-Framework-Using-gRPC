@@ -47,6 +47,16 @@ python -m src.main
 python -m pytest
 ```
 
+To open the browser interface:
+
+```powershell
+python -m src.webapp
+```
+
+Then visit `http://127.0.0.1:5000`. Enter an arithmetic expression and
+run the experiment to view task creation, participant assignment, local
+execution, result collection, and final aggregation.
+
 Install the test dependency first if needed:
 
 ```powershell

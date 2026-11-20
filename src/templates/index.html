@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Federated Arithmetic Prototype</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #18202b;
+            background: #f3f6fa;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 32px auto;
+            padding: 0 20px;
+        }
+        .card {
+            background: white;
+            border: 1px solid #dce3ec;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2 { margin-top: 0; }
+        form {
+            display: flex;
+            gap: 12px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #aeb8c6;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        button {
+            background: #2166d1;
+            color: white;
+            border: 0;
+            border-radius: 6px;
+            padding: 12px 18px;
+            cursor: pointer;
+        }
+        .error {
+            color: #b42318;
+            background: #fff1f0;
+            border: 1px solid #ffc9c5;
+            padding: 12px;
+            border-radius: 6px;
+        }
+        .result {
+            font-size: 28px;
+            font-weight: bold;
+            color: #126b4b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            border-bottom: 1px solid #e4e8ef;
+            padding: 10px;
+        }
+        ol {
+            margin: 0;
+            padding-left: 24px;
+            line-height: 1.8;
+        }
+        .workflow {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(150px, 1fr));
+            gap: 12px;
+            align-items: stretch;
+            overflow-x: auto;
+            padding: 8px 0 14px;
+        }
+        .workflow-stage {
+            position: relative;
+            min-height: 112px;
+            border: 2px solid #b9c8dd;
+            border-radius: 10px;
+            background: #f8fafc;
+            padding: 14px;
+            text-align: center;
+        }
+        .workflow-stage:not(:last-child)::after {
+            content: "→";
+            position: absolute;
+            right: -16px;
+            top: 43%;
+            z-index: 2;
+            color: #2166d1;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .workflow-stage.completed {
+            border-color: #4c9f78;
+            background: #effaf4;
+        }
+        .workflow-stage.active {
+            border-color: #2166d1;
+            background: #edf4ff;
+            box-shadow: 0 0 0 3px rgba(33, 102, 209, 0.10);
+        }
+        .stage-number {
+            display: inline-flex;
+            width: 28px;
+            height: 28px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #2166d1;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .workflow-stage.completed .stage-number {
+            background: #2f855a;
+        }
+        .stage-label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stage-detail {
+            color: #5b6879;
+            font-size: 13px;
+        }
+        .participant-map {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .participant-node {
+            border: 1px solid #cbd6e5;
+            border-radius: 8px;
+            background: #f8fafc;
+            padding: 12px;
+        }
+        .participant-node strong {
+            color: #2166d1;
+        }
+        .progress-list {
+            margin-top: 14px;
+            border-top: 1px solid #e4e8ef;
+            padding-top: 10px;
+        }
+        @media (max-width: 760px) {
+            form {
+                flex-direction: column;
+            }
+            .workflow {
+                grid-template-columns: 1fr;
+            }
+            .workflow-stage:not(:last-child)::after {
+                content: "↓";
+                right: calc(50% - 10px);
+                top: auto;
+                bottom: -26px;
+            }
+            .participant-map {
+                grid-template-columns: 1fr;
+            }
+        }
+        code {
+            background: #edf1f6;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <div class="card">
+            <h1>Federated Arithmetic Demonstration</h1>
+            <p>Enter an expression. The Coordinator will create tasks and distribute them to Participants A and B.</p>
+            <form action="/run" method="post">
+                <input
+                    type="text"
+                    name="expression"
+                    value="{{ expression }}"
+                    aria-label="Arithmetic expression"
+                    required
+                >
+                <button type="submit">Run experiment</button>
+            </form>
+            {% if error %}
+                <p class="error">{{ error }}</p>
+            {% endif %}
+        </div>
+
+        {% if timeline %}
+        <div class="card">
+            <h2>Execution progress</h2>
+            <div class="workflow" aria-label="Federated learning workflow">
+                <div class="workflow-stage completed">
+                    <span class="stage-number">1</span>
+                    <span class="stage-label">User</span>
+                    <span class="stage-detail">Submitted expression</span>
+                </div>
+                <div class="workflow-stage completed">
+                    <span class="stage-number">2</span>
+                    <span class="stage-label">Coordinator</span>
+                    <span class="stage-detail">Created and assigned tasks</span>
+                </div>
+                <div class="workflow-stage completed">
+                    <span class="stage-number">3</span>
+                    <span class="stage-label">Participants</span>
+                    <span class="stage-detail">Calculated local portions</span>
+                </div>
+                <div class="workflow-stage completed">
+                    <span class="stage-number">4</span>
+                    <span class="stage-label">Result collection</span>
+                    <span class="stage-detail">Returned all local results</span>
+                </div>
+                <div class="{% if status == 'COMPLETED' %}workflow-stage completed{% else %}workflow-stage active{% endif %}">
+                    <span class="stage-number">5</span>
+                    <span class="stage-label">Global result</span>
+                    <span class="stage-detail">
+                        {% if final_result is defined %}Aggregation completed{% else %}Waiting for results{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            {% if task_rows %}
+            <div class="participant-map" aria-label="Participant communications">
+                {% set ns = namespace(ids=[]) %}
+                {% for row in task_rows %}
+                    {% if row.participant_id not in ns.ids %}
+                        {% set ns.ids = ns.ids + [row.participant_id] %}
+                    {% endif %}
+                {% endfor %}
+                {% for participant_id in ns.ids %}
+                    <div class="participant-node">
+                        <strong>Participant {{ participant_id }}</strong>
+                        <div>
+                            {% for row in task_rows if row.participant_id == participant_id %}
+                                <div>
+                                    {{ row.task_id }}: <code>{{ row.expression }}</code>
+                                    → {{ row.local_result }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="progress-list">
+                <strong>Event details</strong>
+                <ol>
+                    {% for event in timeline %}
+                        <li>{{ event }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if task_rows %}
+        <div class="card">
+            <h2>Task results</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Participant</th>
+                        <th>Expression</th>
+                        <th>Aggregation sign</th>
+                        <th>Local result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in task_rows %}
+                    <tr>
+                        <td>{{ row.task_id }}</td>
+                        <td>Participant {{ row.participant_id }}</td>
+                        <td><code>{{ row.expression }}</code></td>
+                        <td>{{ "+" if row.sign == 1 else "-" }}</td>
+                        <td>{{ row.local_result }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if final_result is defined %}
+        <div class="card">
+            <h2>Experiment status: {{ status }}</h2>
+            <p>Global result:</p>
+            <p class="result">{{ final_result }}</p>
+        </div>
+        {% endif %}
+    </main>
+</body>
+</html>
